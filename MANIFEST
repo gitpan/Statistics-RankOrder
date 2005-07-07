@@ -1,0 +1,16 @@
+Build.PL
+Changes
+lib/Statistics/RankOrder.pm
+LICENSE
+MANIFEST
+MANIFEST.SKIP
+README
+t/01-new.t
+t/02-input.t
+t/03-mean-rank.t
+t/04-trimmed-mean-rank.t
+t/05-median-rank.t
+t/06-best-majority.t
+Todo
+Makefile.PL
+META.yml

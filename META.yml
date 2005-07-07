@@ -1,0 +1,21 @@
+---
+name: Statistics-RankOrder
+version: 0.10
+author:
+  - David A Golden <dagolden@cpan.org>
+abstract: |-
+  Algorithms for determining overall rankings from 
+  a panel of judges
+license: perl
+requires:
+  Class::Accessor::Fast: 0.19
+  perl: 5.006
+build_requires:
+  Data::Dumper: 2.121
+  Test::Exception: 0.19
+  Test::More: 0.53
+provides:
+  Statistics::RankOrder:
+    file: lib/Statistics/RankOrder.pm
+    version: 0.10
+generated_by: Module::Build version 0.2702

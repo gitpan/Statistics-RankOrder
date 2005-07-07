@@ -1,0 +1,5 @@
+Revision history for Perl module Statistics::RankOrder
+
+0.10 Thu Jul  7 00:36:56 EDT 2005
+	- lowest-mean and trimmed-lowest-mean algorithms
+    - median-rank and best-of-majority algorithms
