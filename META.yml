@@ -1,6 +1,6 @@
 ---
 name: Statistics-RankOrder
-version: 0.10
+version: 0.11
 author:
   - David A Golden <dagolden@cpan.org>
 abstract: |-
@@ -17,5 +17,5 @@ build_requires:
 provides:
   Statistics::RankOrder:
     file: lib/Statistics/RankOrder.pm
-    version: 0.10
+    version: 0.11
 generated_by: Module::Build version 0.2702

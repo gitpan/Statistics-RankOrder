@@ -1,5 +1,8 @@
 Revision history for Perl module Statistics::RankOrder
 
+0.11 Mon Aug  1 10:37:02 EDT 2005
+    - build_requires moved to requires to workaround CPANPLUS bug
+
 0.10 Thu Jul  7 00:36:56 EDT 2005
 	- lowest-mean and trimmed-lowest-mean algorithms
     - median-rank and best-of-majority algorithms

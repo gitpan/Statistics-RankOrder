@@ -2,8 +2,10 @@ Build.PL
 Changes
 lib/Statistics/RankOrder.pm
 LICENSE
+Makefile.PL
 MANIFEST
 MANIFEST.SKIP
+META.yml
 README
 t/01-new.t
 t/02-input.t
@@ -12,5 +14,3 @@ t/04-trimmed-mean-rank.t
 t/05-median-rank.t
 t/06-best-majority.t
 Todo
-Makefile.PL
-META.yml
