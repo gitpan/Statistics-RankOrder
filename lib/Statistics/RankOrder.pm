@@ -1,14 +1,14 @@
 package Statistics::RankOrder;
-use 5.006;
+
+$VERSION = "0.12";
+@ISA     = qw( Class::Accessor::Fast );
+
 use strict;
-use warnings;
-our $VERSION = "0.11";
 
 # Required modules
 use Carp;
+use Class::Accessor::Fast ();
 
-# ISA
-use base qw( Class::Accessor::Fast );
 #--------------------------------------------------------------------------#
 # main pod documentation 
 #--------------------------------------------------------------------------#

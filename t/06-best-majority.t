@@ -1,12 +1,7 @@
-#!/usr/bin/perl
-use strict;
-use warnings;
-use blib;  
-
 # Statistics::RankOrder  
+use strict;
 
 use Test::More;
-use Test::Exception;
 use Data::Dumper;
 use Statistics::RankOrder;
 

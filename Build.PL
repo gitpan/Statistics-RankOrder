@@ -5,17 +5,12 @@ Module::Build->new(
     module_name     => 'Statistics::RankOrder',
     dist_author => 'David A Golden <dagolden@cpan.org>', 
     create_makefile_pl => "traditional",
-    create_readme => 1,
+    create_readme => 0,
     license         => 'perl',
     requires => {
-        perl => 5.006,
+        perl => 5.004,
         Class::Accessor::Fast => 0.19,
+        Data::Dumper => 0, 
+        Test::More => 0.45,
     },
-    build_requires  => { 
-        Data::Dumper => 2.121, 
-        Test::More => 0.53,
-        Test::Exception => 0.19,
-    },
-    recommends => {},
-    conflicts => {},
 )->create_build_script;

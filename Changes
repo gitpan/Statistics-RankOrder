@@ -1,5 +1,10 @@
 Revision history for Perl module Statistics::RankOrder
 
+0.12 Tue Feb  7 00:26:16 EST 2006
+    - remove Test::Exception dependency
+    - changed syntax to be backwards compatible to 5.004
+    - added optional pod/pod-cover tests (skipped by default)
+
 0.11 Mon Aug  1 10:37:02 EDT 2005
     - build_requires moved to requires to workaround CPANPLUS bug
 

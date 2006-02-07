@@ -13,4 +13,6 @@ t/03-mean-rank.t
 t/04-trimmed-mean-rank.t
 t/05-median-rank.t
 t/06-best-majority.t
+t/98-pod.t
+t/99-pod_coverage.t
 Todo

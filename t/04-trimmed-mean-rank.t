@@ -1,12 +1,7 @@
-#!/usr/bin/perl
-use strict;
-use warnings;
-use blib;  
-
 # Statistics::RankOrder  
+use strict;
 
 use Test::More;
-use Test::Exception;
 use Data::Dumper;
 use Statistics::RankOrder;
 
@@ -88,8 +83,8 @@ while ( my ($label, $case) = each (%cases) ) {
     my ($judges, $trim, $ranks) = @$case;
     my $obj = Statistics::RankOrder->new ();
     $obj->add_judge($_) for @$judges;
-    dies_ok { $obj->trimmed_mean_rank(2*@$judges) } 
-        "dies if too much is trimmed";
+    eval { $obj->trimmed_mean_rank(2*@$judges) };
+    ok( $@, "dies if too much is trimmed" );
     last; # we really only need 1
 }
 

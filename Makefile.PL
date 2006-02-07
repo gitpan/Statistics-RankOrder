@@ -2,16 +2,15 @@
 use ExtUtils::MakeMaker;
 WriteMakefile
 (
+          'PL_FILES' => {},
+          'INSTALLDIRS' => 'site',
           'NAME' => 'Statistics::RankOrder',
+          'EXE_FILES' => [],
           'VERSION_FROM' => 'lib/Statistics/RankOrder.pm',
           'PREREQ_PM' => {
-                           'Class::Accessor::Fast' => '0.19',
-                           'Data::Dumper' => '2.121',
-                           'Test::Exception' => '0.19',
-                           'Test::More' => '0.53'
-                         },
-          'INSTALLDIRS' => 'site',
-          'EXE_FILES' => [],
-          'PL_FILES' => {}
+                           'Test::More' => '0.45',
+                           'Data::Dumper' => 0,
+                           'Class::Accessor::Fast' => '0.19'
+                         }
         )
 ;
