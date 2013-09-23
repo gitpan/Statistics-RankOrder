@@ -1,22 +1,146 @@
-package Statistics::RankOrder;
-
-$VERSION = "0.12";
-@ISA     = qw( Class::Accessor::Fast );
-
+use 5.008001;
 use strict;
+use warnings;
 
-# Required modules
+package Statistics::RankOrder;
+# ABSTRACT: Algorithms for determining overall rankings from a panel of judges
+our $VERSION = '0.13'; # VERSION
+
 use Carp;
-use Class::Accessor::Fast ();
+use Class::Tiny {
+    _data => sub { [] }
+};
+
+
+
+sub add_judge {
+    my ( $self, $obs ) = @_;
+    push @{ $self->_data }, $obs;
+    return scalar @{ $self->_data };
+}
+
+
+sub best_majority_rank {
+    my ($self) = shift;
+    my %candidates = $self->candidates;
+    my %best_maj;
+    while ( my ( $cand, $scores ) = ( each %candidates ) ) {
+        my @sorted = sort { $a <=> $b } @$scores;
+        my $index  = int( @sorted / 2 );
+        my $bom    = $sorted[$index];
+        my ( $som, $tom, $to ) = (0) x 3;
+        for (@sorted) {
+            $to += $_;
+            $tom += $_, $som++ if $_ <= $bom;
+        }
+        $best_maj{$cand} = {
+            bom => $bom,
+            som => $som,
+            tom => $tom,
+            to  => $to
+        };
+    }
+    my %compare;
+    for my $k ( keys %best_maj ) {
+        $compare{$k} = 0;
+        $compare{$k} += (
+            $best_maj{$k}{bom} <=> $best_maj{$_}{bom}      # low is good
+              || $best_maj{$_}{som} <=> $best_maj{$k}{som} # high is good
+              || $best_maj{$k}{tom} <=> $best_maj{$_}{tom} # low is good
+              || $best_maj{$k}{to} <=> $best_maj{$_}{to}   # low is good
+        ) for keys %best_maj;
+    }
+    return _scores_to_ranks(%compare);
+}
+
+
+sub candidates {
+    my ($self) = @_;
+    my %c;
+    for my $j ( $self->judges ) {
+        push @{ $c{ $j->[$_] } }, $_ for 0 .. $#{$j};
+    }
+    return %c;
+}
+
+
+sub judges {
+    my ($self) = @_;
+    return @{ $self->_data };
+}
+
+
+sub mean_rank {
+    my ($self) = shift;
+    return $self->trimmed_mean_rank(0);
+}
+
+
+sub median_rank {
+    my ($self) = shift;
+    my %candidates = $self->candidates;
+    my %medians;
+    while ( my ( $cand, $scores ) = ( each %candidates ) ) {
+        my @sorted = sort { $a <=> $b } @$scores;
+        my $index = int( @sorted / 2 );
+        $medians{$cand} = $sorted[$index];
+    }
+    return _scores_to_ranks(%medians);
+}
+
+
+sub trimmed_mean_rank {
+    my ( $self, $trim ) = @_;
+    die "Can't trim away all scores" if 2 * $trim >= $self->judges;
+    my %candidates = $self->candidates;
+    my %means;
+    while ( my ( $cand, $scores ) = ( each %candidates ) ) {
+        my @sorted = sort { $a <=> $b } @$scores;
+        @sorted = @sorted[ $trim .. $#sorted - $trim ];
+        my $avg = 0;
+        $avg += $_ for @sorted;
+        $means{$cand} = $avg / @sorted;
+    }
+    return _scores_to_ranks(%means);
+}
 
 #--------------------------------------------------------------------------#
-# main pod documentation 
+# Private functions
 #--------------------------------------------------------------------------#
+
+sub _scores_to_ranks {
+    my (%scores) = @_;
+    my %ranks;
+    my $cur_rank   = 0;
+    my $index      = 0;
+    my $last_score = -keys %scores;
+    for my $cand ( sort { $scores{$a} <=> $scores{$b} } keys %scores ) {
+        $index++;
+        $cur_rank = $index if $scores{$cand} > $last_score;
+        $ranks{$cand} = $cur_rank;
+        $last_score = $scores{$cand};
+    }
+    return %ranks;
+}
+
+1;
+
+
+# vim: ts=4 sts=4 sw=4 et:
+
+__END__
+
+=pod
+
+=encoding utf-8
 
 =head1 NAME
 
-Statistics::RankOrder - Algorithms for determining overall rankings from 
-a panel of judges
+Statistics::RankOrder - Algorithms for determining overall rankings from a panel of judges
+
+=head1 VERSION
+
+version 0.13
 
 =head1 SYNOPSIS
 
@@ -32,7 +156,7 @@ a panel of judges
   my %ranks = $r->trimmed_mean_rank(1);
   my %ranks = $r->median_rank;
   my %ranks = $r->best_majority_rank;
-  
+
 =head1 DESCRIPTION
 
 This module offers algorithms for combining the rank-ordering of candidates by
@@ -61,36 +185,13 @@ In this alpha version, there is minimal error checking. Future versions will
 have more robust error checking and may have additional ranking methods such as 
 pair-ranking methods.
 
-=head1 USAGE
+=head1 METHODS
 
-=cut
-
-#--------------------------------------------------------------------------#
-# new()
-#--------------------------------------------------------------------------#
-
-=head2 C<new>
+=head2 new
 
  $r = Statistics::RankOrder->new();
 
 Creates a new object with no judges on the panel (i.e. no data);
-
-=cut
-
-{
-
-    __PACKAGE__->mk_accessors(qw( data ));
-
-    sub new {
-        my $class = shift;
-        my $self = bless ({data => []}, ref($class) ? ref($class) : $class);
-        return $self;
-    }
-}
-
-#--------------------------------------------------------------------------#
-# add_judge()
-#--------------------------------------------------------------------------#
 
 =head2 C<add_judge>
 
@@ -98,18 +199,6 @@ Creates a new object with no judges on the panel (i.e. no data);
 
 Adds a judge to the panel.  The single argument is an array-reference with
 the names of candidates ordered from best to worst.
-
-=cut
-
-sub add_judge {
-    my ($self, $obs) = @_;
-    push @{$self->data}, $obs;
-    return scalar @{$self->data};
-}
-
-#--------------------------------------------------------------------------#
-# best_majority_rank()
-#--------------------------------------------------------------------------#
 
 =head2 C<best_majority_rank>
 
@@ -135,50 +224,11 @@ or better
 
 If a tie still exists after these comparisons, then the tie stands.  (In
 practice, this is generally rare.)  When a tie occurs, the next rank assigned
-after the tie is calculated as if the tie had not occured.  E.g., 1st, 2nd,
+after the tie is calculated as if the tie had not occurred.  E.g., 1st, 2nd,
 2nd, 4th, 5th.
 
 Returns a hash where the keys are the names of the candidates and the 
 values are their rankings, with 1 being best and higher numbers worse. 
-
-=cut
-
-sub best_majority_rank {
-    my ($self) = shift;
-    my %candidates = $self->candidates;
-    my %best_maj;
-    while (my ($cand,$scores) = (each %candidates) ) {
-        my @sorted = sort { $a <=> $b } @$scores;
-        my $index = int (@sorted / 2 );
-        my $bom = $sorted[$index];
-        my ($som, $tom, $to) = (0) x 3;
-        for (@sorted) {
-            $to += $_;
-            $tom += $_, $som++ if $_ <= $bom;
-        }
-        $best_maj{$cand} = { 
-            bom => $bom, som => $som, tom => $tom, to => $to
-        };
-    }
-    my %compare;
-    for my $k ( keys %best_maj ) {
-        $compare{$k} = 0;
-        $compare{$k} += ( 
-            $best_maj{$k}{bom} <=> $best_maj{$_}{bom} # low is good
-                                ||
-            $best_maj{$_}{som} <=> $best_maj{$k}{som} # high is good
-                                ||
-            $best_maj{$k}{tom} <=> $best_maj{$_}{tom} # low is good
-                                ||
-            $best_maj{$k}{to}  <=> $best_maj{$_}{to} # low is good
-        ) for keys %best_maj;
-    }
-    return _scores_to_ranks(%compare);
-}
-
-#--------------------------------------------------------------------------#
-# candidates()
-#--------------------------------------------------------------------------#
 
 =head2 C<candidates>
 
@@ -187,38 +237,12 @@ sub best_majority_rank {
 Returns a hash with keys being the names of candidates and the values being
 array references containing the rankings from all judges for each candidate.
 
-=cut
-
-sub candidates {
-    my ($self) = @_;
-    my %c;
-    for my $j ( $self->judges ) {
-        push @{$c{$j->[$_]}}, $_ for 0 .. $#{$j};
-    }
-    return %c;
-}
-    
-#--------------------------------------------------------------------------#
-# judges()
-#--------------------------------------------------------------------------#
-
 =head2 C<judges>
 
  my @judges = $r->judges;
 
 Returns a list of array-references representing the rank-orderings of each
 judge.
-
-=cut
-
-sub judges {
-    my ($self) = @_;
-    return @{$self->data};
-}
-
-#--------------------------------------------------------------------------#
-# mean_rank()
-#--------------------------------------------------------------------------#
 
 =head2 C<mean_rank>
 
@@ -229,21 +253,10 @@ rank is computed for each candidate.  The candidate with the lowest mean rank
 is placed 1st, the second lowest mean rank is 2nd, and so on.  If the mean
 ranks are the same, the candidates tie for that position.  When a tie occurs,
 the next rank assigned after the tie is calculated as if the tie had not
-occured.  E.g., 1st, 2nd, 2nd, 4th, 5th.
+occurred.  E.g., 1st, 2nd, 2nd, 4th, 5th.
 
 Returns a hash where the keys are the names of the candidates and the 
 values are their rankings, with 1 being best and higher numbers worse. 
-
-=cut
-
-sub mean_rank {
-    my ($self) = shift;
-    return $self->trimmed_mean_rank(0);
-}
-
-#--------------------------------------------------------------------------#
-# median_rank()
-#--------------------------------------------------------------------------#
 
 =head2 C<median_rank>
 
@@ -257,28 +270,10 @@ support that rank or better.  The candidate with the lowest median rank is
 placed 1st, the second lowest median rank is 2nd, and so on.  If the median
 ranks are the same, the candidates tie for that position.  When a tie occurs,
 the next rank assigned after the tie is calculated as if the tie had not
-occured.  E.g., 1st, 2nd, 2nd, 4th, 5th.
+occurred.  E.g., 1st, 2nd, 2nd, 4th, 5th.
 
 Returns a hash where the keys are the names of the candidates and the 
 values are their rankings, with 1 being best and higher numbers worse. 
-
-=cut
-
-sub median_rank {
-    my ($self) = shift;
-    my %candidates = $self->candidates;
-    my %medians;
-    while (my ($cand,$scores) = (each %candidates) ) {
-        my @sorted = sort { $a <=> $b } @$scores;
-        my $index = int (@sorted / 2 );
-        $medians{$cand} = $sorted[$index];
-    }
-    return _scores_to_ranks(%medians);
-}
-
-#--------------------------------------------------------------------------#
-# trimmed_meanrank()
-#--------------------------------------------------------------------------#
 
 =head2 C<trimmed_mean_rank>
 
@@ -290,50 +285,11 @@ and N highest scores.  E.g. C<trimmed_mean_rank(2)> will drop
 the 2 lowest and highest scores.  The candidate with the lowest mean rank is
 placed 1st, the second lowest mean rank is 2nd, and so on.  If the mean ranks
 are the same, the candidates tie for that position.  When a tie occurs, the
-next rank assigned after the tie is calculated as if the tie had not occured.
+next rank assigned after the tie is calculated as if the tie had not occurred.
 E.g., 1st, 2nd, 2nd, 4th, 5th.
 
 Returns a hash where the keys are the names of the candidates and the 
 values are their rankings, with 1 being best and higher numbers worse. 
-
-=cut
-
-sub trimmed_mean_rank {
-    my ($self,$trim) = @_;
-    die "Can't trim away all scores" if 2 * $trim >= $self->judges;
-    my %candidates = $self->candidates;
-    my %means;
-    while (my ($cand,$scores) = (each %candidates) ) {
-        my @sorted = sort { $a <=> $b } @$scores;
-        @sorted = @sorted[ $trim .. $#sorted- $trim ];
-        my $avg = 0;
-        $avg += $_ for @sorted;
-        $means{$cand} = $avg / @sorted;
-    }
-    return _scores_to_ranks(%means);
-}
-
-#--------------------------------------------------------------------------#
-# _scores_to_ranks
-#--------------------------------------------------------------------------#
-
-sub _scores_to_ranks {
-    my (%scores) = @_;
-    my %ranks;
-    my $cur_rank = 0;
-    my $index = 0;
-    my $last_score = - keys %scores;
-    for my $cand (sort { $scores{$a} <=> $scores{$b} } keys %scores ) {
-        $index++;
-        $cur_rank = $index if $scores{$cand} > $last_score;
-        $ranks{$cand} = $cur_rank;
-        $last_score = $scores{$cand};
-    }
-    return %ranks;
-} 
-    
-1; #this line is important and will help the module return a true value
-__END__
 
 =head1 SEE ALSO
 
@@ -357,37 +313,35 @@ and Jody M. Sorensen.  L<http://mathcs.muhlenberg.edu/~rykken/skating-full.pdf>
 
 =back
 
-=head1 INSTALLATION
+=for :stopwords cpan testmatrix url annocpan anno bugtracker rt cpants kwalitee diff irc mailto metadata placeholders metacpan
 
-The following commands will build, test, and install this module:
+=head1 SUPPORT
 
- perl Build.PL
- perl Build
- perl Build test
- perl Build install
+=head2 Bugs / Feature Requests
 
-=head1 BUGS
+Please report any bugs or feature requests through the issue tracker
+at L<https://github.com/dagolden/Statistics-RankOrder/issues>.
+You will be notified automatically of any progress on your issue.
 
-Please report bugs using the CPAN Request Tracker at 
-http://rt.cpan.org/NoAuth/Bugs.html?Dist=Statistics-RankOrder
+=head2 Source Code
+
+This is open source software.  The code repository is available for
+public review and contribution under the terms of the license.
+
+L<https://github.com/dagolden/Statistics-RankOrder>
+
+  git clone https://github.com/dagolden/Statistics-RankOrder.git
 
 =head1 AUTHOR
 
-David A Golden (DAGOLDEN)
+David Golden <dagolden@cpan.org>
 
-dagolden@cpan.org
+=head1 COPYRIGHT AND LICENSE
 
-http://dagolden.com/
+This software is Copyright (c) 2005 by David A Golden.
 
-=head1 COPYRIGHT
+This is free software, licensed under:
 
-Copyright (c) 2005 by David A Golden
-
-This program is free software; you can redistribute
-it and/or modify it under the same terms as Perl itself.
-
-The full text of the license can be found in the
-LICENSE file included with this module.
-
+  The Apache License, Version 2.0, January 2004
 
 =cut
